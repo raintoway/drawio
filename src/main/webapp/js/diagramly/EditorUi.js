@@ -14600,6 +14600,13 @@
 			{
 				this.fileLoaded(new LocalFile(this, data, name ||
 					this.defaultFilename, temp, fileHandle, desc));
+				let models = this.editor.graph.model.root.children[0].children	
+				if(models.length){
+					models.forEach(model=>{
+						model.pptModel !==undefined && (model.pptModel += '',model.pptModel = Object.fromEntries(model.pptModel.split(',').map(item=>[item,true])))
+					})
+				}
+				console.log('openLocalFile',this.editor.graph.model.root.children[0].children,this.editor.graph.model);
 			}
 		});
 

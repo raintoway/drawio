@@ -2101,3 +2101,13 @@ table.geProperties tr td {
     transform: translate(0, 0);
     z-index: 0;
 }
+@keyframes PPTShow
+{
+	from {transform:translateX(300px);}
+	to {transform:translateX(0px);}
+}
+@keyframes PPTHidden
+{
+	from {transform:translateX(-300px);}
+	to {transform:translateX(0px);}
+}

@@ -271,6 +271,9 @@ mxscript(drawDevUrl + 'js/diagramly/GitLabLibrary.js');
 mxscript(drawDevUrl + 'js/diagramly/GitLabClient.js');
 
 mxscript(drawDevUrl + 'js/diagramly/App.js');
+mxscript(drawDevUrl + 'js/diagramly/sortable/Sortable.js');
+mxscript(drawDevUrl + 'js/diagramly/sortable/prettify.js');
+mxscript(drawDevUrl + 'js/diagramly/sortable/app.js');
 mxscript(drawDevUrl + 'js/diagramly/Menus.js');
 mxscript(drawDevUrl + 'js/diagramly/Pages.js');
 mxscript(drawDevUrl + 'js/diagramly/Trees.js');

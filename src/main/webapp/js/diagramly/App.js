@@ -4443,6 +4443,7 @@ App.prototype.saveLibrary = function(name, images, file, mode, noSpin, noReload,
 App.prototype.saveFile = function(forceDialog, success)
 {
 	var file = this.getCurrentFile();
+	console.log('saveFile',file);
 	
 	if (file != null)
 	{
@@ -6254,7 +6255,13 @@ App.prototype.showNotification = function(notifs, lsReadFlag)
 App.prototype.save = function(name, done)
 {
 	var file = this.getCurrentFile();
-	
+	let models = this.editor.graph.model.root.children[0].children
+	if(models.length){
+		models.forEach(model=>{
+			model.pptModel && (model.pptModel = Object.keys(model.pptModel).join(','))
+		})
+	}
+	console.log('save',this.editor.graph.model.root.children[0].children,this.editor.graph.model)	
 	if (file != null && this.spinner.spin(document.body, mxResources.get('saving')))
 	{
 		this.editor.setStatus('');
@@ -6978,7 +6985,359 @@ App.prototype.updateHeader = function()
 		this.toggleFormatElement.style.backgroundSize = '16px 16px';
 		this.toggleFormatElement.style.backgroundRepeat = 'no-repeat';
 		this.toolbarContainer.appendChild(this.toggleFormatElement);
+		this.pptElement = document.createElement('span');
+		this.pptElement.innerText = '芜湖'
+		this.toolbarContainer.appendChild(this.pptElement);
 		right += 20;
+
+		// ppt相关模块数据
+		this.pptContainer = document.createElement('div');
+		this.pptContainer.className = 'pptContainer'
+		this.pptContainer.style.height="700px"
+		this.pptContainer.style.width = '300px'
+		this.pptContainer.style.position = 'fixed'
+		this.pptContainer.style.top = '100px'
+		this.pptContainer.style.right = '-300px'
+		this.pptContainer.style.backgroundColor = '#eeee'
+		let body = document.getElementsByTagName('body')[0]
+		body.appendChild(this.pptContainer)
+		this.assetUrl = 'http://43.138.251.145:2335/img/'
+
+		var renderPPT = ()=>{
+			updateModelsAndNodes()
+			resetAllNodeStyle()
+			showAllNode()
+			// 容器标签
+			this.pptContainer.innerHTML = ''
+			this.pptContainer.style.fontSize = '16px'
+			this.pptContainer.style.padding = '5px 10px'
+			this.pptContainer.style.boxSizing = 'border-box'
+			// this.currentPPTStep只是models的pptModel中最高的步数，但是其中可能有些步数为空，所以才有真正步数这个东西
+			let trueCurrentPPTStep = 0
+			let maxStep = getMaxStep()
+			let pptContainerList = document.createElement('div')
+			pptContainerList.className = 'list-group col nested-sortable'
+			pptContainerList.id = 'pptContainerList'
+			pptContainerList.setAttribute('sortableName','stepContainer')
+			for (let i = 0; i <= maxStep; i++) {
+				let stepContainer = document.createElement('div')
+				stepContainer.className = `list-group-item`
+				stepContainer.style.border="2px solid pink"
+				stepContainer.style.userSelect="none"
+				stepContainer.style.marginTop="10px"
+				stepContainer.style.padding="5px 10px"
+				stepContainer.innerText = `第${trueCurrentPPTStep}步`
+				stepContainer.setAttribute('currentStep',trueCurrentPPTStep)
+
+				let step = document.createElement('div')
+				step.className = 'list-group nested-sortable'
+				step.style.userSelect="none"
+				step.setAttribute('sortableName','elementContainer')
+				let {currentStepModels,currentStepNodes} = getModelAndNodeByStep(i)
+				currentStepNodes.forEach((node,nodeIndex)=>{
+					let ele = node.children.length && node.children[0]
+					let stepEl = document.createElement('div')
+					stepEl.style.border="2px solid skyblue"
+					stepEl.style.position="relative"
+					stepEl.style.marginTop="2px"
+					stepEl.innerHTML = 'g'
+					stepEl.setAttribute('uniKey',ele.getAttribute('uniKey'))
+					stepEl.addEventListener('mouseenter',()=>{
+						changeEleColor(ele,true)
+					})
+					stepEl.addEventListener('mouseleave',()=>{
+						changeEleColor(ele,false)
+					})
+
+					let delBtn = document.createElement('img')
+					delBtn.style.width= '16px'
+					delBtn.style.position= 'absolute'
+					delBtn.style.right= '2px'
+					delBtn.style.top= '50%'
+					delBtn.style.transform= 'translateY(-50%)'
+
+					delBtn.setAttribute('src',this.assetUrl + 'del.png')
+					let tempFunc = delFunc(ele,trueCurrentPPTStep)
+					delBtn.addEventListener('click',tempFunc)
+					stepEl.appendChild(delBtn)
+					step.appendChild(stepEl)
+				})
+				
+				// 将currentStepModels中的model.pptModel的步骤更新为trueCurrentPPtModel
+				currentStepModels.forEach(model=>{
+					if(model.pptModel) delete model.pptModel[i]
+					else model.pptModel = {}
+					model.pptModel[trueCurrentPPTStep] = true
+				})
+
+				if(currentStepNodes.length){
+					stepContainer.appendChild(step)
+					pptContainerList.appendChild(stepContainer)
+					trueCurrentPPTStep++
+				}
+			}
+
+			let play = document.createElement('div')
+			play.innerText = '播放ppt'
+			play.style.userSelect="none"
+			play.addEventListener('click',(evt)=>{
+				evt.stopPropagation()
+				resetAllNodeStyle()
+				this.editor.graph.isPlayingPPT = true
+				this.playCount = 0
+				this.pptContainer.style.right = '-300px'
+				this.pptContainer.style.animation = 'PPTHidden 0.5s 1';
+				this.editor.graph.enabled = false
+				this.editor.graph.isppt = false
+				this.nodes.forEach(item=>{
+					item.style.visibility = "hidden"
+				})
+				this.editor.graph.container.addEventListener('click',this.graphClick)
+			})
+			
+			let currentPPTStep = document.createElement('div')
+			currentPPTStep.innerText = `第${trueCurrentPPTStep-1}步`
+			currentPPTStep.style.userSelect="none"
+			this.pptContainer.appendChild(pptContainerList)
+			this.pptContainer.appendChild(play)
+			this.pptContainer.appendChild(currentPPTStep)
+
+			addSortableTopptContainer()
+		}
+		// 将所有的node的元素的样式都初始化
+		var resetAllNodeStyle = () => {
+			this.nodes.forEach(node=>{
+				let ele = node.children.length && node.children[0]
+				ele && ele.getAttribute('prestroke') && ele.setAttribute('stroke',ele.getAttribute('prestroke'))
+			})
+		}
+		// 将所有node的元素都显现
+		var showAllNode = ()=>{
+			this.nodes.forEach(node=>{
+				node && (node.style.visibility = 'visible')
+			})
+		}
+		// 将指定svg的元素改色，如果有兄弟节点，则都改
+		function changeEleColor(ele,isChange){
+			if(isChange) {
+				ele.setAttribute('prestroke',ele.getAttribute('stroke')),
+				ele.setAttribute('stroke','skyblue')
+			}
+			else ele.setAttribute('stroke',ele.getAttribute('prestroke'))
+			if(ele.nextSibling) changeEleColor(ele.nextSibling,isChange)
+			if(ele.children.length && ele.tagName === 'g'){
+				let deepestNode = findDeepestNode(ele)
+				if(isChange){
+					deepestNode.setAttribute('precolor',deepestNode.style.color)
+					deepestNode.style.color = 'skyblue'
+				}else {
+					deepestNode.getAttribute('precolor') && 
+						(deepestNode.style.color = deepestNode.getAttribute('precolor'))
+				}
+			} 
+		}
+		function findDeepestNode(ele){
+			if(ele.children && ele.children.length){
+				return findDeepestNode(ele.children[0])
+			}else {
+				return ele
+			}
+		}
+		// 点击graph，播放ppt
+		this.graphClick = (evt)=>{
+			// 所有第i+1步的model
+			let currentStepModels = this.models.filter(model=> model.pptModel && model.pptModel[this.playCount]) || []
+			// 如果currentModels中有edge，并且有children，得特殊处理
+			currentStepModels.forEach(model=>{
+				if(model.edge && model.children && model.children.length){
+					model.children.forEach(secModel=>{
+						currentStepModels.push(secModel)
+					})
+				}
+			})
+			let currentStepModelsMap = {}
+			currentStepModels.forEach(model=>currentStepModelsMap[model.id] = true)
+			// 所有第i+1步的node节点
+			let currentStepNodes = this.nodes.filter(node => node.children.length && currentStepModelsMap[node.children[0].getAttribute('uniKey')]) || []
+			currentStepNodes.forEach(node=>{
+				node.style.visibility = 'visible'
+			})
+			this.playCount++
+
+			if(!currentStepNodes.length){
+				this.playCount = 0
+				this.editor.graph.enabled = true
+				this.editor.graph.isppt = false
+				this.editor.graph.isPlayingPPT = false
+			}
+		}
+		this.playCount = 0
+		this.nodes = []
+		this.models = []
+		// 获取指定步骤的所有model和node
+		var getModelAndNodeByStep = (step)=>{
+			// 所有第step步的model
+			let currentStepModels = this.models.filter(model=> model.pptModel && model.pptModel[step]) || []
+			// 如果currentModels中有edge，并且有children，得特殊处理
+			currentStepModels.forEach(model=>{
+				if(model.edge && model.children && model.children.length){
+					model.children.forEach(secModel=>{
+						currentStepModels.push(secModel)
+					})
+				}
+			})
+			let currentStepModelsMap = {}
+			currentStepModels.forEach(model=>currentStepModelsMap[model.id] = true)
+			// 所有第step步的node节点
+			let currentStepNodes = this.nodes.filter(node => node.children.length && currentStepModelsMap[node.children[0].getAttribute('uniKey')]) || []
+			return {currentStepModels,currentStepNodes}
+			
+		}
+		// 删除ppt元素回调
+		var delFunc = (ele,trueCurrentPPTStep)=>{
+			let uniKey = ele.getAttribute('uniKey')
+			return ()=>{
+				let targetModel = this.models.find(model=>model.id === uniKey) || {}
+				targetModel.pptModel !==undefined && delete targetModel.pptModel[trueCurrentPPTStep]
+				renderPPT()
+			}
+		}
+		// 给pptContainer添加sortable
+		var addSortableTopptContainer = ()=>{
+			var nestedSortables = [].slice.call(document.querySelectorAll('.nested-sortable'));
+			nestedSortables.forEach(node=>{
+				new Sortable(node, {
+					group: 'nested',
+					animation: 150,
+					fallbackOnBody: true,
+					onEnd:function(evt) {
+						changePPtModelAfterMode(evt)
+					}
+				});
+			})
+		}
+		// 移动ppt步骤，更改对应model数据
+		var changePPtModelAfterMode = (evt) => {
+			let oIndex = evt.oldIndex
+			let nIndex = evt.newIndex
+			// 移动步骤
+			if(evt.from.getAttribute('sortableName') === 'stepContainer' && evt.to.getAttribute('sortableName') === 'stepContainer'){
+				// 未移动
+				if(oIndex === nIndex){
+				}// oIndex>nIndex，为上移
+				// 将nIndex ~ oIndex-1步骤的元素全+1
+				// 将oIndex的元素步骤改为nIndex
+				else if(oIndex > nIndex){
+					let {currentStepModels} = getModelAndNodeByStep(oIndex)
+					for (let i = oIndex-1; i >= nIndex; i--) {
+						let {currentStepModels} = getModelAndNodeByStep(i)
+						currentStepModels.forEach(model=>{
+							model.pptModel !==undefined && 
+								delete model.pptModel[i], 
+								model.pptModel[i+1] = i === oIndex-1 && model.pptModel[i+1] ? 2 : true 
+						})
+					}
+					currentStepModels.forEach(model=>{
+						model.pptModel !== undefined && 
+							model.pptModel[oIndex] === 2 ?
+								model.pptModel[oIndex] = true :  
+								delete model.pptModel[oIndex], 
+							model.pptModel[nIndex] = true
+					})
+				}// oIndex<nIndex，为下移
+				// 将oIndex+1 ~ nIndex步骤的元素全-1
+				// 将oIndex的元素步骤该为nIndex
+				else {
+					let {currentStepModels} = getModelAndNodeByStep(oIndex)
+					for (let i = oIndex+1; i <= nIndex; i++) {
+						let {currentStepModels} = getModelAndNodeByStep(i)
+						currentStepModels.forEach(model=>{
+							model.pptModel !==undefined && 
+								delete model.pptModel[i], 
+								model.pptModel[i-1] = i === oIndex+1 &&  model.pptModel[i-1] ? 2 : true
+						})
+					}
+					currentStepModels.forEach(model=>{
+						model.pptModel !== undefined && 
+							model.pptModel[oIndex] === 2 ?
+								model.pptModel[oIndex] = true :  
+								delete model.pptModel[oIndex], 
+							model.pptModel[nIndex] = true
+					})
+				}
+			}// 非移动步骤：合并步骤等
+			else {
+				// 将某步骤迁移到另一个步骤下
+				if(evt.from.getAttribute('sortableName') === 'stepContainer' && evt.to.getAttribute('sortableName') === 'elementContainer'){
+					let newIndex = evt.to.parentNode.getAttribute('currentStep') 
+					let {currentStepModels} = getModelAndNodeByStep(oIndex)
+					currentStepModels.forEach(model=>{
+						model.pptModel !== undefined && delete model.pptModel[oIndex],model.pptModel[newIndex] = true
+					})
+				}// 将某步骤的某元素迁移到另一个步骤下
+				else if(evt.from.getAttribute('sortableName') === 'elementContainer' && evt.to.getAttribute('sortableName') === 'elementContainer') {
+					let uniKey = evt.item.getAttribute('uniKey')
+					let targetModel = this.models.find(model=>model.id === uniKey) || {}
+					let newInex =  evt.to.parentNode.getAttribute('currentStep') 
+					let oldIndex = evt.from.parentNode.getAttribute('currentStep')
+					targetModel.pptModel!==undefined && delete targetModel.pptModel[oldIndex],targetModel.pptModel[newInex] = true
+				} 
+				// 其他情况不动 
+			}
+			renderPPT()
+		}
+		// 获取当前models中最大步数
+		var getMaxStep = ()=>{
+			let max = -1
+			this.models.forEach(model=>{
+				if(model.pptModel){
+					for (const key in model.pptModel) {
+						if (Object.hasOwnProperty.call(model.pptModel, key)) {
+							max = Math.max(max,key)
+						}
+					}
+				}
+			})
+			return max
+		}
+		// 更新this.modesl和this.nodes
+		var updateModelsAndNodes=()=>{
+			this.nodes = this.editor.graph.container.childNodes[1].childNodes[1].childNodes[1].childNodes || []
+			this.nodes = Array.prototype.slice.call(this.nodes,0) || []
+			this.models = this.editor.graph.model.root.children[0].children || []
+		}
+		var initPPT = ()=>{
+			if(!this.editor.graph.isppt) {
+				this.editor.graph.enabled = false
+				this.editor.graph.isppt = true
+				this.editor.graph.isPlayingPPT = false
+				this.pptContainer.style.right = '0px'
+				this.pptContainer.style.animation = 'PPTShow 0.5s 1';
+				renderPPT()
+				new Sortable(document.getElementById('pptContainerList'), {
+					animation: 150,
+					onEnd:function(evt) {
+						changePPtModelAfterMode(evt)
+					}
+				});
+			}else {
+				this.pptContainer.style.right = '-300px'
+				this.pptContainer.style.animation = 'PPTHidden 0.5s 1';
+				this.editor.graph.enabled = true
+				this.editor.graph.isppt = false
+				this.editor.graph.isPlayingPPT = false
+			}
+		}
+		this.editor.graph.renderPPT = renderPPT
+		this.editor.graph.getMaxStep = getMaxStep
+		this.editor.graph.updateModelsAndNodes = updateModelsAndNodes
+		this.pptElement.addEventListener('click',initPPT)
+
+		document.addEventListener('keyup',(e)=>{
+			if (e.altKey && e.keyCode===81){
+				initPPT()
+			}
+		})
 		
 		// Prevents focus
 	    mxEvent.addListener(this.toggleFormatElement, (mxClient.IS_POINTER) ? 'pointerdown' : 'mousedown',

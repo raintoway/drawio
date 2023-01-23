@@ -4,7 +4,7 @@ const os = require('os');
 const path = require('path')
 const url = require('url')
 const {Menu: menu, shell, dialog,
-		clipboard, nativeImage, ipcMain, app, BrowserWindow} = require('electron')
+		clipboard, nativeImage, ipcMain, app, BrowserWindow,globalShortcut} = require('electron')
 const crc = require('crc');
 const zlib = require('zlib');
 const log = require('electron-log')
@@ -28,7 +28,8 @@ if (process.argv.indexOf('--disable-acceleration') !== -1)
 	app.disableHardwareAcceleration();
 }
 
-const __DEV__ = process.env.DRAWIO_ENV === 'dev'
+// const __DEV__ = process.env.DRAWIO_ENV === 'dev'
+const __DEV__ = true
 		
 let windowsRegistry = []
 let cmdQPressed = false
@@ -246,6 +247,7 @@ function createWindow (opt = {})
 // Some APIs can only be used after this event occurs.
 app.on('ready', e =>
 {
+	
 	ipcMain.on('newfile', (event, arg) =>
 	{
 		let opts = {};
@@ -705,7 +707,9 @@ app.on('ready', e =>
     }
 
     let win = createWindow()
-    
+    globalShortcut.register('CommandOrControl+Shift+i', function () {
+		win.webContents.openDevTools()
+	})
 	let loadEvtCount = 0;
 			
 	function loadFinished()
