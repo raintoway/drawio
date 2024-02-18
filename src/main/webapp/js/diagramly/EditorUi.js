@@ -1225,8 +1225,36 @@
 		ignoreSelection = (ignoreSelection != null) ? ignoreSelection : true;
 		currentPage = (currentPage != null) ? currentPage : false;
 		uncompressed = (uncompressed != null) ? uncompressed : !Editor.compressXml;
-		
 		// Generats graph model XML node for single page export
+		// 此刻的node是一个mxgraphmodel
+		// <mxGraphModel
+		// 	dx="564"
+		// 	dy="586"
+		// 	grid="1"
+		// 	gridSize="10"
+		// 	guides="1"
+		// 	tooltips="1"
+		// 	connect="1"
+		// 	arrows="1"
+		// 	fold="1"
+		// 	page="1"
+		// 	pageScale="1"
+		// 	pageWidth="827"
+		// 	pageHeight="1169"
+		// 	><root
+		// 		><mxCell id="0" /><mxCell id="1" parent="0" /><mxCell
+		// 		id="qJhveboShYkGBKf0FysZ-2"
+		// 		value=""
+		// 		style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;"
+		// 		parent="1"
+		// 		vertex="1"
+		// 		><mxGeometry
+		// 			x="747"
+		// 			y="1070"
+		// 			width="80"
+		// 			height="80"
+		// 			as="geometry" /></mxCell></root
+		// 	></mxGraphModel>
 		var node = this.editor.getGraphXml(ignoreSelection, resolveReferences);
 		
 		if (ignoreSelection && this.fileNode != null && this.currentPage != null)
@@ -1236,6 +1264,18 @@
 			mxUtils.setTextContent(this.currentPage.node, Graph.compressNode(node));
 
 			// Creates a clone of the file node for processing
+			// filenode是一个mxfile节点
+			// <mxfile
+			// host="127.0.0.1"
+			// modified="2024-02-14T07:36:10.986Z"
+			// agent="5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0"
+			// etag="zZtaiml3Yx7uUYIze5t4"
+			// version="20.8.10"
+			// type="device"
+			// ><diagram id="fIiA2W3dLfb0ScCYOYvh" name="Page-1"
+			// 	>jZJLT4QwEMc/DUcTHrqsV3AXo/HEweit0oE2Foqly8NPb7HTBUJMvDTT30zn8Z96UVqPmSIte5EUhBf6dPSiBy8Mo8O9OWcwWXB3PFhQKU4tChaQ829A6CO9cArdJlBLKTRvt7CQTQOF3jCilBy2YaUU26otqWAH8oKIPX3lVDNLj2G88EfgFXOVAzdwTVwwTtIxQuWwQtHJi1IlpbZWPaYgZu2cLvbd+Q/vtTEFjf7Pg68n1sOHzNnbZ5Y8l/556t5vQpulJ+KCA2OzenIKmCxGbHNJBsY15C0pZs9g1m0Y07Uwt8CYpGvtBko+gima7DvEpntQGsYVwo4zkDVoNZkQ9Ma3KPTkvkWMcg6rbSBiq0U4RnD/1TX1IpExUCV3Xbbx61t96ej0Aw==</diagram
+			// ></mxfile
+			// >
 			node = this.fileNode.cloneNode(false);
 
 			// Appends the node of the page and applies compression
@@ -1660,9 +1700,10 @@
 				}
 			}
 		}
-
+		// 节点信息
 		node = (node != null) ? node : this.getXmlFileData(ignoreSelection,
 			currentPage, uncompressed, resolveReferences);
+	    // 生成的文件的元数据
 		file = (file != null) ? file : this.getCurrentFile();
 
 		var result = this.createFileData(node, graph, file, window.location.href,
@@ -4498,14 +4539,14 @@
 	/**
 	 * 
 	 */
-	EditorUi.prototype.saveCanvas = function(canvas, xml, format, ignorePageName, dpi)
+	EditorUi.prototype.saveCanvas = function(canvas, xml, format, ignorePageName, dpi, byUrl = false)
 	{
 		var ext = ((format == 'jpeg') ? 'jpg' : format);
 		var filename = this.getBaseFilename(ignorePageName) +
 			((xml != null) ? '.drawio' : '') + '.' + ext;
    	    var data = this.createImageDataUri(canvas, xml, format, dpi);
 
-   	    this.saveData(filename, ext, data.substring(data.lastIndexOf(',') + 1), 'image/' + format, true);
+   	    this.saveData(filename, ext, data.substring(data.lastIndexOf(',') + 1), 'image/' + format, true,byUrl);
 	};
 	
 	/**
@@ -4553,7 +4594,7 @@
 			defaultExtension = (defaultExtension != null) ? defaultExtension : 'drawio';
 			filename = filename + '.' + defaultExtension;
 		}
-		
+
 		// Newer versions of IE
 		if (window.Blob && navigator.msSaveOrOpenBlob)
 		{
@@ -4710,7 +4751,7 @@
 	 * @param {number} dx X-coordinate of the translation.
 	 * @param {number} dy Y-coordinate of the translation.
 	 */
-	EditorUi.prototype.saveLocalFile = function(data, filename, mimeType, base64Encoded, format, allowBrowser, allowTab, defaultExtension)
+	EditorUi.prototype.saveLocalFile = function(data, filename, mimeType, base64Encoded, format, allowBrowser, allowTab, defaultExtension,byUrl)
 	{
 		allowBrowser = (allowBrowser != null) ? allowBrowser : false;
 		allowTab = (allowTab != null) ? allowTab : (format != 'vsdx') && (!mxClient.IS_IOS || !navigator.standalone);
@@ -4757,7 +4798,7 @@
 				}
 				else if (mode == App.MODE_DEVICE || mode == 'download')
 				{
-					this.doSaveLocalFile(data, newTitle, mimeType, base64Encoded, null, defaultExtension);
+					this.doSaveLocalFile(data, newTitle, mimeType, base64Encoded, null, defaultExtension,byUrl);
 				} 
 				else if (newTitle != null && newTitle.length > 0)
 				{
@@ -4784,8 +4825,51 @@
 		}), mxResources.get('saveAs'), mxResources.get('download'), false, allowBrowser, allowTab,
 			null, count > 1, rowLimit, data, mimeType, base64Encoded);
 		var height = (this.isServices(count)) ? ((count > rowLimit) ? 390 : 280) : 160;
-		this.showDialog(dlg.container, 420, height, true, true);
-		dlg.init();
+		// 如果是通过服务器url来预览
+		if(byUrl) {
+			const blob = (base64Encoded) ?
+			this.base64ToBlob(data, mimeType) :
+			new Blob([data], {type: mimeType})
+
+			// 创建FormData对象并添加文件
+			const formData = new FormData();
+			formData.append('file', blob, 'index.png');
+
+			// 发起文件上传请求
+			fetch('http://localhost:8000', {
+				method: 'POST',
+				body: formData,
+			})
+			.then(response => {
+				return response.text()
+			})
+			.then(data => {
+				try {
+					const rsl = JSON.parse(data)
+					console.log(222,rsl);
+					const div =  document.createElement('div')
+					div.innerText = rsl.url
+					div.style.width='100%'
+					div.style.height='150px'
+					div.style.border='1px solid gray'
+					div.style.fontFamily='monospace'
+					div.style.wordBreak='break-all'
+					div.style.resize = 'none'
+					var dlg = new CustomDialog(this,div, rsl.url, null, null,null,null);
+					this.showDialog(dlg.container, 340, 300, true, true);
+
+				}catch(err) {
+					console.error(err)
+				}
+				
+			})
+			.catch(error => {
+				console.error('Error:', error);
+			});
+		} else {
+			this.showDialog(dlg.container, 420, height, true, true);
+			dlg.init();
+		}
 	};
 	
 	/**
@@ -5085,11 +5169,11 @@
 	 * @param {number} dx X-coordinate of the translation.
 	 * @param {number} dy Y-coordinate of the translation.
 	 */
-	EditorUi.prototype.saveData = function(filename, format, data, mime, base64Encoded)
+	EditorUi.prototype.saveData = function(filename, format, data, mime, base64Encoded,byUrl)
 	{
 		if (this.isLocalFileSave())
 		{
-			this.saveLocalFile(data, filename, mime, base64Encoded, format);
+			this.saveLocalFile(data, filename, mime, base64Encoded, format,null,null,null,byUrl);
 		}
 		else
 		{
@@ -5766,7 +5850,6 @@
 		{
 			data.edit = editLink;
 		}
-		
 		if (publicUrl != null)
 		{
 			data.url = publicUrl;
@@ -5775,9 +5858,8 @@
 		{
 			data.xml = this.getFileData(true, null, null, null, null, !allPages);
 		}
-	
 		var value = '<div class="mxgraph" style="' +
-			((fit) ? 'max-width:100%;' : '') +
+			((fit) ? 'width:100vw;height:100vh;overflow:auto;' : '') +
 			((tb != '') ? 'border:1px solid transparent;' : '') +
 			'" data-mxgraph="' + mxUtils.htmlEntities(JSON.stringify(data)) + '"></div>';
 		
@@ -5786,7 +5868,8 @@
 			'https://test.draw.io/embed2.js?dev=1' : EditorUi.lightboxHost + '/embed2.js?')) + fetchParam :
 			(((urlParams['dev'] == '1') ? 'https://test.draw.io/js/viewer-static.min.js' :
 			window.DRAWIO_VIEWER_URL ? window.DRAWIO_VIEWER_URL : EditorUi.lightboxHost + '/js/viewer-static.min.js'));
-		var src = '<script type="text/javascript" src="' + s2 + '"></script>';
+		// var src = '<script type="text/javascript" src="' + s2 + '"></script>';
+		var src = '<script type="text/javascript" src="http://localhost:8000/viewer-static.min.js"' + '"></script>';
 		
 		fn(value, src);
 	};
@@ -7114,7 +7197,7 @@
 	 *
 	 */
 	EditorUi.prototype.exportImage = function(scale, transparentBackground, ignoreSelection, addShadow,
-		editable, border, noCrop, currentPage, format, grid, dpi, keepTheme, exportType)
+		editable, border, noCrop, currentPage, format, grid, dpi, keepTheme, exportType,byUrl)
 	{
 		format = (format != null) ? format : 'png';
 		
@@ -7139,7 +7222,7 @@
 			   		{
 			   			this.saveCanvas(canvas, (editable) ? this.getFileData(true, null,
 			   				null, null, ignoreSelection, currentPage) : null,
-			   				format, (this.pages == null || this.pages.length == 0), dpi);
+			   				format, (this.pages == null || this.pages.length == 0), dpi,byUrl);
 			   		}
 			   		catch (e)
 			   		{

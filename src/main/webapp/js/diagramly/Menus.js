@@ -2616,7 +2616,11 @@
 				}
 			});
 		}
-		
+		this.editorUi.actions.addAction('previewUrl', mxUtils.bind(this, function()
+		{
+			console.log(111,'previewUrl');
+			editorUi.exportImage(1, false,true,false,true,'0',true,true,null,false,null,null,'page',true)
+		}));
 		this.put('exportAs', new Menu(mxUtils.bind(this, function(menu, parent)
 		{
 			if (editorUi.isExportToCanvas())
@@ -4902,7 +4906,6 @@
 			else
 			{
 				var file = this.editorUi.getCurrentFile();
-				
 				if (file != null && file.constructor == DriveFile)
 				{
 					if (file.isRestricted())
@@ -4924,6 +4927,7 @@
 				else
 				{
 					this.addMenuItems(menu, ['new'], parent);
+					this.addMenuItems(menu, ['previewUrl'], parent);
 				}
 				
 				this.addSubmenu('openFrom', menu, parent);
