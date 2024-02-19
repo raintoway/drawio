@@ -1,4 +1,4 @@
-<!-- Graph ：drawio内置的Graph解析器 -->
+<!-- mxGraph ：drawio内置的Graph解析器 -->
 src/main/webapp/js/grapheditor/Graph.js
 
 <!-- mxfile：diagram文件的存储形式 -->
@@ -13,8 +13,6 @@ src/main/webapp/js/grapheditor/Graph.js
     >jZJLT4QwEMc/DUcTHrqsV3AXo/HEweit0oE2Foqly8NPb7HTBUJMvDTT30zn8Z96UVqPmSIte5EUhBf6dPSiBy8Mo8O9OWcwWXB3PFhQKU4tChaQ829A6CO9cArdJlBLKTRvt7CQTQOF3jCilBy2YaUU26otqWAH8oKIPX3lVDNLj2G88EfgFXOVAzdwTVwwTtIxQuWwQtHJi1IlpbZWPaYgZu2cLvbd+Q/vtTEFjf7Pg68n1sOHzNnbZ5Y8l/556t5vQpulJ+KCA2OzenIKmCxGbHNJBsY15C0pZs9g1m0Y07Uwt8CYpGvtBko+gima7DvEpntQGsYVwo4zkDVoNZkQ9Ma3KPTkvkWMcg6rbSBiq0U4RnD/1TX1IpExUCV3Xbbx61t96ej0Aw==</diagram
   ></mxfile
 >
-
-
 
 <!-- mxgraphmodel：mxfile经过mxgraph解析后的数据结构 -->
 <mxGraphModel
@@ -46,10 +44,8 @@ src/main/webapp/js/grapheditor/Graph.js
         as="geometry" /></mxCell></root
 ></mxGraphModel>
 
-
 <!-- extractGraphModelFromHtml ： Helper function to extract the graph model XML node.-->
 extractGraphModelFromHtml
-
 
 <!-- key point -->
 <!-- 解析digrams标签，即mxfile -->
